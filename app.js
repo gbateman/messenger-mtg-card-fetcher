@@ -305,27 +305,29 @@ function sendGifMessage(recipientId) {
  *
  */
 function sendCardMessage(recipientId, messageText) {
+  sendReadReceipt(recipientId);
   sendTypingOn(recipientId);
 
   mtg.card.where({ name: messageText })
-  .then( card => {
-    console.log(card);
+  .then( cards => {
     sendTypingOff(recipientId);
-    // var messageData = {
-    //   recipient: {
-    //     id: recipientId
-    //   },
-    //   message: {
-    //     attachment: {
-    //       type: "image",
-    //       payload: {
-    //         url: card.imageUrl
-    //       }
-    //     }
-    //   }
-    // };
-    //
-    // callSendAPI(messageData);
+    console.log(cards[0].imageUrl);
+    console.log(cards[0]);
+    var messageData = {
+      recipient: {
+        id: recipientId
+      },
+      message: {
+        attachment: {
+          type: "image",
+          payload: {
+            url: cards[0].imageUrl
+          }
+        }
+      }
+    };
+
+    callSendAPI(messageData);
   });
 }
 
