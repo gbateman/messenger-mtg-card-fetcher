@@ -9,11 +9,11 @@ const
   crypto = require('crypto'),
   express = require('express'),
   https = require('https'),
-  request = require('request');
+  request = require('request')
+  mtg = require('mtgsdk');
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
-app.set('view engine', 'pug');
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
 
@@ -38,13 +38,7 @@ const PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
   (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
   config.get('pageAccessToken');
 
-// URL where the app is running (include protocol). Used to point to scripts and
-// assets located at this address.
-const SERVER_URL = (process.env.SERVER_URL) ?
-  (process.env.SERVER_URL) :
-  config.get('serverURL');
-
-if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
+if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
   console.error("Missing config values");
   process.exit(1);
 }
@@ -311,11 +305,28 @@ function sendGifMessage(recipientId) {
  *
  */
 function sendCardMessage(recipientId, messageText) {
-  var messageData = {
+  sendTypingOn(recipientId);
 
-  };
-
-  callSendAPI(messageData);
+  mtg.card.where({ name: messageText })
+  .then( card => {
+    console.log(card);
+    sendTypingOff(recipientId);
+    // var messageData = {
+    //   recipient: {
+    //     id: recipientId
+    //   },
+    //   message: {
+    //     attachment: {
+    //       type: "image",
+    //       payload: {
+    //         url: card.imageUrl
+    //       }
+    //     }
+    //   }
+    // };
+    //
+    // callSendAPI(messageData);
+  });
 }
 
 /*
