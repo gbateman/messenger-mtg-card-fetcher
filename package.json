@@ -1,0 +1,24 @@
+{
+  "name": "messenger-mtg-card-fetcher",
+  "version": "1.0.0",
+  "description": "MTG Card Fetcher for Messenger",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gerbot150/messenger-mtg-card-fetcher"
+  },
+  "author": "Greg Bateman",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.15.0",
+    "config": "^1.20.4",
+    "express": "^4.13.4",
+    "request": "^2.72.0"
+  },
+  "engines": {
+    "node": "~4.1.2"
+  }
+}
