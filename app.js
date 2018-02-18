@@ -322,14 +322,49 @@ function sendCardMessage(recipientId, messageText) {
           }
         }
       };
+      callSendAPI(messageData);
+      sendCardButtonsMessage(recipientId, cards[0]);
     } else {
       messageData.message = {
-        text: messageText + " was not found."
+        text: messageText + " was not found"
       };
+      callSendAPI(messageData);
     }
-
-    callSendAPI(messageData);
   });
+}
+
+/*
+ * Send button links for a card
+ *
+ */
+function sendCardButtonsMessage(recipientId, card) {
+  const set = card.set.toLowerCase(),
+    number = card.number;
+  let messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: card.name,
+          buttons:[{
+            type: "web_url",
+            url: "https://scryfall.com/card/" + set + "/" + number,
+            title: "Scryfall"
+          }, {
+            type: "web_url",
+            url: "https://scryfall.com/card/" + set + "/" + number,
+            title: "Scryfall 2"
+          }]
+        }
+      }
+    }
+  };
+
+  callSendAPI(messageData);
 }
 
 /*
