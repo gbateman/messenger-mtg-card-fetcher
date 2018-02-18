@@ -69,7 +69,6 @@ app.get('/webhook', function(req, res) {
  */
 app.post('/webhook', function (req, res) {
   var data = req.body;
-  console.log(data);
 
   // Make sure this is a page subscription
   if (data.object == 'page') {
@@ -198,18 +197,6 @@ function receivedMessage(event) {
         sendQuickReply(senderID);
         break;
 
-      case 'read receipt':
-        sendReadReceipt(senderID);
-        break;
-
-      case 'typing on':
-        sendTypingOn(senderID);
-        break;
-
-      case 'typing off':
-        sendTypingOff(senderID);
-        break;
-
       default:
         sendCardMessage(senderID, messageText);
     }
@@ -300,38 +287,92 @@ function sendGifMessage(recipientId) {
   callSendAPI(messageData);
 }
 
+function getShareButtonForCard(card) {
+  return {
+    "type": "element_share",
+    "share_contents": {
+      "attachment": {
+        "type": "template",
+        "payload": {
+          "template_type":"generic",
+          "image_aspect_ratio": "square",
+          "elements":[
+            {
+              "title": card.name,
+              "image_url": card.imageUrl,
+              "default_action": {
+                "type": "web_url",
+                "url": getScryfallButtonForCard(card).url,
+              },
+              "buttons":[
+                getScryfallButtonForCard(card)
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+function getScryfallButtonForCard(card) {
+   const set = card.set.toLowerCase(),
+     number = card.number;
+   return {
+     type: "web_url",
+     url: "https://scryfall.com/card/" + set + "/" + number,
+     title: "Scryfall"
+   }
+}
+
 /*
  * Send a message with a card image using the MTG and Send APIs
  *
  */
-function sendCardMessage(recipientId, messageText) {
-  mtg.card.where({ name: messageText })
-  .then( cards => {
-    var messageData = {
-      recipient: {
-        id: recipientId
-      }
-    };
+ function sendCardMessage(recipientId, messageText) {
+   mtg.card.where({ name: messageText })
+   .then( cards => cards.filter(card => card.imageUrl))
+   .then( cards => {
+     var messageData = {
+       recipient: {
+         id: recipientId
+       }
+     };
 
-    if (cards[0]) {
-      messageData.message = {
-        attachment: {
-          type: "image",
-          payload: {
-            url: cards[0].imageUrl
-          }
-        }
-      };
-      callSendAPI(messageData);
-      sendCardButtonsMessage(recipientId, cards[0]);
-    } else {
-      messageData.message = {
-        text: messageText + " was not found"
-      };
-      callSendAPI(messageData);
-    }
-  });
-}
+     const card = cards[0];
+     if (card) {
+       callAttachmentUploadAPI(card.imageUrl)
+       .then(attachment_id => {
+         messageData.message = {
+           attachment: {
+             type: "template",
+             payload: {
+               template_type: "media",
+               elements: [
+                 {
+                   media_type: "image",
+                   attachment_id: attachment_id,
+                   buttons: [
+                     getScryfallButtonForCard(card),
+                     getShareButtonForCard(card)
+                   ]
+                 }
+               ]
+             }
+           }
+         };
+
+         callSendAPI(messageData);
+       });
+     } else {
+       messageData.message = {
+         text: messageText + " was not found"
+       };
+
+       callSendAPI(messageData);
+     }
+   });
+ }
 
 /*
  * Send button links for a card
@@ -368,143 +409,36 @@ function sendCardButtonsMessage(recipientId, card) {
 }
 
 /*
- * Send a text message using the Send API.
+ * Call the Attachment Upload API to get an attachment id for an image
  *
  */
-function sendTextMessage(recipientId, messageText) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: messageText,
-      metadata: "DEVELOPER_DEFINED_METADATA"
-    }
-  };
-
-  callSendAPI(messageData);
-}
-
-/*
- * Send a button message using the Send API.
- *
- */
-function sendButtonMessage(recipientId) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "button",
-          text: "This is test text",
-          buttons:[{
-            type: "web_url",
-            url: "https://www.oculus.com/en-us/rift/",
-            title: "Open Web URL"
-          }, {
-            type: "postback",
-            title: "Trigger Postback",
-            payload: "DEVELOPER_DEFINED_PAYLOAD"
-          }, {
-            type: "phone_number",
-            title: "Call Phone Number",
-            payload: "+16505551234"
-          }]
-        }
-      }
-    }
-  };
-
-  callSendAPI(messageData);
-}
-
-/*
- * Send a message with Quick Reply buttons.
- *
- */
-function sendQuickReply(recipientId) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: "What's your favorite movie genre?",
-      quick_replies: [
-        {
-          "content_type":"text",
-          "title":"Action",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_ACTION"
-        },
-        {
-          "content_type":"text",
-          "title":"Comedy",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_COMEDY"
-        },
-        {
-          "content_type":"text",
-          "title":"Drama",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_DRAMA"
-        }
-      ]
-    }
-  };
-
-  callSendAPI(messageData);
-}
-
-/*
- * Send a read receipt to indicate the message has been read
- *
- */
-function sendReadReceipt(recipientId) {
-  console.log("Sending a read receipt to mark message as seen");
-
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    sender_action: "mark_seen"
-  };
-
-  callSendAPI(messageData);
-}
-
-/*
- * Turn typing indicator on
- *
- */
-function sendTypingOn(recipientId) {
-  console.log("Turning typing indicator on");
-
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    sender_action: "typing_on"
-  };
-
-  callSendAPI(messageData);
-}
-
-/*
- * Turn typing indicator off
- *
- */
-function sendTypingOff(recipientId) {
-  console.log("Turning typing indicator off");
-
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    sender_action: "typing_off"
-  };
-
-  callSendAPI(messageData);
-}
+ function callAttachmentUploadAPI(url) {
+   return new Promise((resolve, reject) => {
+     request({
+       uri: 'https://graph.facebook.com/v2.6/me/message_attachments',
+       qs: { access_token: PAGE_ACCESS_TOKEN },
+       method: 'POST',
+       json: {
+         message: {
+           attachment: {
+             type: "image",
+             payload: {
+               is_reusable: true,
+               url: url
+             }
+           }
+         }
+       }
+     }, function (error, response, body) {
+       if (!error && response.statusCode == 200) {
+         resolve(body.attachment_id);
+       } else {
+         console.error("Failed calling Attachment Upload API", response.statusCode, response.statusMessage, body.error);
+         reject();
+       }
+     });
+   });
+ }
 
 /*
  * Call the Send API. The message data goes in the body. If successful, we'll
