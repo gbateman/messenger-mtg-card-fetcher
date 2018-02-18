@@ -305,13 +305,8 @@ function sendGifMessage(recipientId) {
  *
  */
 function sendCardMessage(recipientId, messageText) {
-  sendReadReceipt(recipientId);
-  sendTypingOn(recipientId);
-
   mtg.card.where({ name: messageText })
   .then( cards => {
-    sendTypingOff(recipientId);
-
     var messageData = {
       recipient: {
         id: recipientId
