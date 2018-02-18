@@ -311,21 +311,27 @@ function sendCardMessage(recipientId, messageText) {
   mtg.card.where({ name: messageText })
   .then( cards => {
     sendTypingOff(recipientId);
-    console.log(cards[0].imageUrl);
-    console.log(cards[0]);
+
     var messageData = {
       recipient: {
         id: recipientId
-      },
-      message: {
+      }
+    };
+
+    if (cards[0]) {
+      messageData.message = {
         attachment: {
           type: "image",
           payload: {
             url: cards[0].imageUrl
           }
         }
-      }
-    };
+      };
+    } else {
+      messageData.message = {
+        text: messageText + " was not found."
+      };
+    }
 
     callSendAPI(messageData);
   });
