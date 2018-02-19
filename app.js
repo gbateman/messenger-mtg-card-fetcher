@@ -70,6 +70,8 @@ app.get('/webhook', function(req, res) {
 app.post('/webhook', function (req, res) {
   var data = req.body;
 
+  console.log(JSON.stringify(data));
+
   // Make sure this is a page subscription
   if (data.object == 'page') {
     // Iterate over each entry
@@ -82,6 +84,8 @@ app.post('/webhook', function (req, res) {
       pageEntry.messaging.forEach(function(messagingEvent) {
         if (messagingEvent.message) {
           receivedMessage(messagingEvent);
+        } else if (messagingEvent.postback) {
+          receivedPostback(messagingEvent);
         } else {
           console.log("Webhook received unused messagingEvent: ", messagingEvent);
         }
@@ -129,16 +133,6 @@ function verifyRequestSignature(req, res, buf) {
 /*
  * Message Event
  *
- * This event is called when a message is sent to your page. The 'message'
- * object format can vary depending on the kind of message that was received.
- * Read more at https://developers.facebook.com/docs/messenger-platform/webhook-reference/message-received
- *
- * For this example, we're going to echo any text that we get. If we get some
- * special keywords ('button', 'generic', 'receipt'), then we'll send back
- * examples of those bubbles to illustrate the special message bubbles we've
- * created. If we receive a message with an attachment (image, video, audio),
- * then we'll simply confirm that we've received the attachment.
- *
  */
 function receivedMessage(event) {
   var senderID = event.sender.id;
@@ -175,33 +169,63 @@ function receivedMessage(event) {
   }
 
   if (messageText) {
-
-    // If we receive a text message, check to see if it matches any special
-    // keywords and send back the corresponding example. Otherwise, just echo
-    // the text we received.
-    switch (messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase()) {
-      case 'hello':
-      case 'hi':
-        sendHiMessage(senderID);
-        break;
-
-      case 'image':
-        sendImageMessage(senderID);
-        break;
-
-      case 'button':
-        sendButtonMessage(senderID);
-        break;
-
-      case 'quick reply':
-        sendQuickReply(senderID);
-        break;
-
-      default:
-        sendCardMessage(senderID, messageText);
-    }
+    handleMessageText(senderID, messageText);
   } else if (messageAttachments) {
     sendTextMessage(senderID, "Message with attachment received");
+  }
+}
+
+/*
+ * Postback Event
+ *
+ */
+function receivedPostback(event) {
+  var senderID = event.sender.id;
+  var recipientID = event.recipient.id;
+  var timeOfMessage = event.timestamp;
+  var postback = event.postback;
+
+  console.log("Received postback for user %d and page %d at %d with message:",
+    senderID, recipientID, timeOfMessage);
+  console.log(JSON.stringify(postback));
+
+  var payload = postback.payload;
+  if (payload) {
+    handleMessageText(senderID, payload);
+  }
+}
+
+function handleMessageText(senderID, messageText) {
+  const hashtagIndex = messageText.indexOf("#");
+  let page = 0;
+  if (hashtagIndex >= 0 && messageText.length > hashtagIndex) {
+    page = parseInt(messageText.substr(hashtagIndex + 1));
+    messageText = messageText.substr(0, hashtagIndex);
+  }
+
+  // If we receive a text message, check to see if it matches any special
+  // keywords and send back the corresponding example. Otherwise, just echo
+  // the text we received.
+  switch (messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase()) {
+    case 'hello':
+    case 'hi':
+      sendHiMessage(senderID);
+      break;
+
+    case 'image':
+      sendImageMessage(senderID);
+      break;
+
+    case 'button':
+      sendButtonMessage(senderID);
+      break;
+
+    case 'quick reply':
+      sendQuickReply(senderID);
+      break;
+
+    default:
+      callMTGSDK(senderID, messageText, page);
   }
 }
 
@@ -326,62 +350,12 @@ function getScryfallButtonForCard(card) {
 }
 
 /*
- * Send a message with a card image using the MTG and Send APIs
+ * Send a message with a card image using the Send API
  *
  */
- function sendCardMessage(recipientId, messageText) {
-   mtg.card.where({ name: messageText })
-   .then( cards => cards.filter(card => card.imageUrl))
-   .then( cards => {
-     var messageData = {
-       recipient: {
-         id: recipientId
-       }
-     };
-
-     const card = cards[0];
-     if (card) {
-       callAttachmentUploadAPI(card.imageUrl)
-       .then(attachment_id => {
-         messageData.message = {
-           attachment: {
-             type: "template",
-             payload: {
-               template_type: "media",
-               elements: [
-                 {
-                   media_type: "image",
-                   attachment_id: attachment_id,
-                   buttons: [
-                     getScryfallButtonForCard(card),
-                     getShareButtonForCard(card)
-                   ]
-                 }
-               ]
-             }
-           }
-         };
-
-         callSendAPI(messageData);
-       });
-     } else {
-       messageData.message = {
-         text: messageText + " was not found"
-       };
-
-       callSendAPI(messageData);
-     }
-   });
- }
-
-/*
- * Send button links for a card
- *
- */
-function sendCardButtonsMessage(recipientId, card) {
-  const set = card.set.toLowerCase(),
-    number = card.number;
-  let messageData = {
+function sendCardMessage(recipientId, attachment_id, card) {
+  console.log("Single");
+  var messageData = {
     recipient: {
       id: recipientId
     },
@@ -389,17 +363,17 @@ function sendCardButtonsMessage(recipientId, card) {
       attachment: {
         type: "template",
         payload: {
-          template_type: "button",
-          text: card.name,
-          buttons:[{
-            type: "web_url",
-            url: "https://scryfall.com/card/" + set + "/" + number,
-            title: "Scryfall"
-          }, {
-            type: "web_url",
-            url: "https://scryfall.com/card/" + set + "/" + number,
-            title: "Scryfall 2"
-          }]
+          template_type: "media",
+          elements: [
+            {
+              media_type: "image",
+              attachment_id: attachment_id,
+              buttons: [
+                getScryfallButtonForCard(card),
+                getShareButtonForCard(card)
+              ]
+            }
+          ]
         }
       }
     }
@@ -407,6 +381,90 @@ function sendCardButtonsMessage(recipientId, card) {
 
   callSendAPI(messageData);
 }
+
+/*
+ * Send a message with a list of potential cards using the Send API
+ *
+ */
+function sendCardListMessage(recipientId, cards, cardName, page) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "list",
+          top_element_style: "compact",
+          elements: cards.map(card => {
+            return {
+              title: card.name,
+              buttons: [
+                getScryfallButtonForCard(card)
+              ]
+            }
+          }).slice(page * 4, 4),
+          buttons: [
+            {
+              type: "postback",
+              title: "View More",
+              payload: cardName + "#" + (page + 1)
+            }
+          ]
+        }
+      }
+    }
+  };
+
+  callSendAPI(messageData);
+}
+
+/*
+ * Send a message with a card image using the Send API
+ *
+ */
+ function callMTGSDK(recipientId, cardName, page) {
+   mtg.card.where({ name: cardName })
+   .then(cards => cards.filter(card => card.imageUrl && card.number)) // Filter out cards without images or set numbers
+   .then(cards => {
+     let uniqueNames = [];
+     return cards.filter(card => {
+       if (!uniqueNames.includes(card.name)) {
+         uniqueNames.push(card.name);
+         return true;
+       }
+       return false;
+     });
+   }) // Remove cards with duplicate names
+   .then(cards => {
+     if (cards[0]) {
+       const matchingName = cards.filter(card => card.name.toLowerCase() == cardName.toLowerCase());
+       if (matchingName.length >= 1) {
+         cards = [matchingName[0]];
+       }
+       if (cards.length == 1) {
+         callAttachmentUploadAPI(cards[0].imageUrl)
+         .then(attachment_id => {
+           sendCardMessage(recipientId, attachment_id, cards[0]);
+         });
+       } else {
+         sendCardListMessage(recipientId, cards, cardName, page);
+       }
+     } else {
+       var messageData = {
+         recipient: {
+           id: recipientId
+         },
+         message: {
+           text: cardName + " was not found"
+         }
+       };
+
+       callSendAPI(messageData);
+     }
+   });
+ }
 
 /*
  * Call the Attachment Upload API to get an attachment id for an image
