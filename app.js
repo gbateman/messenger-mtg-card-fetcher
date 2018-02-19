@@ -144,34 +144,10 @@ function receivedMessage(event) {
     senderID, recipientID, timeOfMessage);
   console.log(JSON.stringify(message));
 
-  var isEcho = message.is_echo;
-  var messageId = message.mid;
-  var appId = message.app_id;
-  var metadata = message.metadata;
-
   // You may get a text or attachment but not both
   var messageText = message.text;
-  var messageAttachments = message.attachments;
-  var quickReply = message.quick_reply;
-
-  if (isEcho) {
-    // Just logging message echoes to console
-    console.log("Received echo for message %s and app %d with metadata %s",
-      messageId, appId, metadata);
-    return;
-  } else if (quickReply) {
-    var quickReplyPayload = quickReply.payload;
-    console.log("Quick reply for message %s with payload %s",
-      messageId, quickReplyPayload);
-
-    sendTextMessage(senderID, "Quick reply tapped");
-    return;
-  }
-
   if (messageText) {
     handleMessageText(senderID, messageText);
-  } else if (messageAttachments) {
-    sendTextMessage(senderID, "Message with attachment received");
   }
 }
 
@@ -203,106 +179,35 @@ function handleMessageText(senderID, messageText) {
     messageText = messageText.substr(0, hashtagIndex);
   }
 
-  // If we receive a text message, check to see if it matches any special
-  // keywords and send back the corresponding example. Otherwise, just echo
-  // the text we received.
-  switch (messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase()) {
-    case 'hello':
-    case 'hi':
-      sendHiMessage(senderID);
-      break;
-
-    case 'image':
-      sendImageMessage(senderID);
-      break;
-
-    case 'button':
-      sendButtonMessage(senderID);
-      break;
-
-    case 'quick reply':
-      sendQuickReply(senderID);
-      break;
-
-    default:
-      callMTGSDK(senderID, messageText, page);
-  }
+  messageText = messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase();
+  callMTGSDK(senderID, messageText, page);
 }
 
 /*
- * Message Read Event
- *
- * This event is called when a previously-sent message has been read.
- * https://developers.facebook.com/docs/messenger-platform/webhook-reference/message-read
+ * Send a message with a card image using the Send API
  *
  */
-function receivedMessageRead(event) {
-  var senderID = event.sender.id;
-  var recipientID = event.recipient.id;
-
-  // All messages before watermark (a timestamp) or sequence have been seen.
-  var watermark = event.read.watermark;
-  var sequenceNumber = event.read.seq;
-
-  console.log("Received message read event for watermark %d and sequence " +
-    "number %d", watermark, sequenceNumber);
-}
-
-function sendHiMessage(recipientId) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: `
-Congrats on setting up your Messenger Bot!
-
-Right now, your bot can only respond to a few words. Try out "quick reply", "typing on", "button", or "image" to see how they work. You'll find a complete list of these commands in the "app.js" file. Anything else you type will just be mirrored until you create additional commands.
-
-For more details on how to create commands, go to https://developers.facebook.com/docs/messenger-platform/reference/send-api.
-      `
-    }
-  }
-
-  callSendAPI(messageData);
-}
-
-/*
- * Send an image using the Send API.
- *
- */
-function sendImageMessage(recipientId) {
+function sendCardMessage(recipientId, attachment_id, card) {
+  console.log("Single");
   var messageData = {
     recipient: {
       id: recipientId
     },
     message: {
       attachment: {
-        type: "image",
+        type: "template",
         payload: {
-          url: SERVER_URL + "/assets/rift.png"
-        }
-      }
-    }
-  };
-
-  callSendAPI(messageData);
-}
-
-/*
- * Send a Gif using the Send API.
- *
- */
-function sendGifMessage(recipientId) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      attachment: {
-        type: "image",
-        payload: {
-          url: SERVER_URL + "/assets/instagram_logo.gif"
+          template_type: "media",
+          elements: [
+            {
+              media_type: "image",
+              attachment_id: attachment_id,
+              buttons: [
+                getScryfallButtonForCard(card),
+                getShareButtonForCard(card)
+              ]
+            }
+          ]
         }
       }
     }
@@ -347,39 +252,6 @@ function getScryfallButtonForCard(card) {
      url: "https://scryfall.com/card/" + set + "/" + number,
      title: "Scryfall"
    }
-}
-
-/*
- * Send a message with a card image using the Send API
- *
- */
-function sendCardMessage(recipientId, attachment_id, card) {
-  console.log("Single");
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "media",
-          elements: [
-            {
-              media_type: "image",
-              attachment_id: attachment_id,
-              buttons: [
-                getScryfallButtonForCard(card),
-                getShareButtonForCard(card)
-              ]
-            }
-          ]
-        }
-      }
-    }
-  };
-
-  callSendAPI(messageData);
 }
 
 /*
