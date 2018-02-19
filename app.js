@@ -188,7 +188,6 @@ function handleMessageText(senderID, messageText) {
  *
  */
 function sendCardMessage(recipientId, attachment_id, card) {
-  console.log("Single");
   var messageData = {
     recipient: {
       id: recipientId
@@ -269,25 +268,31 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
         payload: {
           template_type: "list",
           top_element_style: "compact",
-          elements: cards.map(card => {
+          elements: cards.slice(0, 4).map(card => {
             return {
               title: card.name,
+              subtitle: card.type + "\n" + card.text,
+              image_url: card.imageUrl,
               buttons: [
                 getScryfallButtonForCard(card)
               ]
             }
-          }).slice(page * 4, 4),
-          buttons: [
-            {
-              type: "postback",
-              title: "View More",
-              payload: cardName + "#" + (page + 1)
-            }
-          ]
+          }),
+          buttons: []
         }
       }
     }
   };
+
+  if (cards.length > 4) {
+    messageData.message.attachment.payload.buttons.push(
+      {
+        type: "postback",
+        title: "More",
+        payload: cardName + "#" + (page + 1)
+      }
+    );
+  }
 
   callSendAPI(messageData);
 }
@@ -299,6 +304,7 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
  function callMTGSDK(recipientId, cardName, page) {
    mtg.card.where({ name: cardName })
    .then(cards => cards.filter(card => card.imageUrl && card.number)) // Filter out cards without images or set numbers
+   .then(cards => cards.filter(card => card.set.toLowerCase() != "van"))
    .then(cards => {
      let uniqueNames = [];
      return cards.filter(card => {
@@ -309,11 +315,13 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
        return false;
      });
    }) // Remove cards with duplicate names
+   .then(cards => cards.slice(page * 4)) // Remove already displayed cards
    .then(cards => {
+     console.log("Cards: ", cards.map(card => card.name));
      if (cards[0]) {
        const matchingName = cards.filter(card => card.name.toLowerCase() == cardName.toLowerCase());
        if (matchingName.length >= 1) {
-         cards = [matchingName[0]];
+         cards = [matchingName[0]]; // If the query matches a card name exactly, only take that card
        }
        if (cards.length == 1) {
          callAttachmentUploadAPI(cards[0].imageUrl)
