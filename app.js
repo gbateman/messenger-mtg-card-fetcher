@@ -179,7 +179,6 @@ function handleMessageText(senderID, messageText) {
     messageText = messageText.substr(0, hashtagIndex);
   }
 
-  messageText = messageText.replace(/[^\w\s]/gi, '').trim().toLowerCase();
   callMTGSDK(senderID, messageText, page);
 }
 
@@ -273,8 +272,16 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
               title: card.name,
               subtitle: card.type + "\n" + card.text,
               image_url: card.imageUrl,
+              "default_action": {
+                "type": "web_url",
+                "url": getScryfallButtonForCard(card).url
+              },
               buttons: [
-                getScryfallButtonForCard(card)
+                {
+                  type: "postback",
+                  title: "This One",
+                  payload: card.name
+                }
               ]
             }
           }),
