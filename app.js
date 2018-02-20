@@ -44,6 +44,14 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
 }
 
 /*
+ * Privacy Policy because fb wants that for some reason
+ *
+ */
+app.get('/privacy-policy', function(req, res) {
+  res.send("MTGCardFetcher does not request any personal logins or data and therefore does not guarantee the safety of any user data.");
+});
+
+/*
  * Use your own validation token. Check that the token used in the Webhook
  * setup is the same token used here.
  *
