@@ -180,6 +180,7 @@ function receivedPostback(event) {
 }
 
 function handleMessageText(senderID, messageText) {
+  messageText = messageText.replace(/‘|’/g, '\'').replace(/“|”/g, '\"')
   const hashtagIndex = messageText.indexOf('#');
   let page = 0;
   if (hashtagIndex >= 0 && messageText.length > hashtagIndex) {
