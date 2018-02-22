@@ -39,7 +39,7 @@ const PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
   config.get('pageAccessToken');
 
 if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
-  console.error("Missing config values");
+  console.error('Missing config values');
   process.exit(1);
 }
 
@@ -48,7 +48,7 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
  *
  */
 app.get('/privacy-policy', function(req, res) {
-  res.send("MTGCardFetcher does not request any personal logins or data and therefore does not guarantee the safety of any user data.");
+  res.send('MTGCardFetcher does not request any personal logins or data and therefore does not guarantee the safety of any user data.');
 });
 
 /*
@@ -59,10 +59,10 @@ app.get('/privacy-policy', function(req, res) {
 app.get('/webhook', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
       req.query['hub.verify_token'] === VALIDATION_TOKEN) {
-    console.log("Validating webhook");
+    console.log('Validating webhook');
     res.status(200).send(req.query['hub.challenge']);
   } else {
-    console.error("Failed validation. Make sure the validation tokens match.");
+    console.error('Failed validation. Make sure the validation tokens match.');
     res.sendStatus(403);
   }
 });
@@ -95,7 +95,7 @@ app.post('/webhook', function (req, res) {
         } else if (messagingEvent.postback) {
           receivedPostback(messagingEvent);
         } else {
-          console.log("Webhook received unused messagingEvent: ", messagingEvent);
+          console.log('Webhook received unused messagingEvent: ', messagingEvent);
         }
       });
     });
@@ -117,12 +117,12 @@ app.post('/webhook', function (req, res) {
  *
  */
 function verifyRequestSignature(req, res, buf) {
-  var signature = req.headers["x-hub-signature"];
+  var signature = req.headers['x-hub-signature'];
 
   if (!signature) {
     // For testing, let's log an error. In production, you should throw an
     // error.
-    console.error("Couldn't validate the signature.");
+    console.error('Couldn\'t validate the signature.');
   } else {
     var elements = signature.split('=');
     var method = elements[0];
@@ -133,7 +133,7 @@ function verifyRequestSignature(req, res, buf) {
                         .digest('hex');
 
     if (signatureHash != expectedHash) {
-      throw new Error("Couldn't validate the request signature.");
+      throw new Error('Couldn\'t validate the request signature.');
     }
   }
 }
@@ -148,7 +148,7 @@ function receivedMessage(event) {
   var timeOfMessage = event.timestamp;
   var message = event.message;
 
-  console.log("Received message for user %d and page %d at %d with message:",
+  console.log('Received message for user %d and page %d at %d with message:',
     senderID, recipientID, timeOfMessage);
   console.log(JSON.stringify(message));
 
@@ -169,7 +169,7 @@ function receivedPostback(event) {
   var timeOfMessage = event.timestamp;
   var postback = event.postback;
 
-  console.log("Received postback for user %d and page %d at %d with message:",
+  console.log('Received postback for user %d and page %d at %d with message:',
     senderID, recipientID, timeOfMessage);
   console.log(JSON.stringify(postback));
 
@@ -180,7 +180,7 @@ function receivedPostback(event) {
 }
 
 function handleMessageText(senderID, messageText) {
-  const hashtagIndex = messageText.indexOf("#");
+  const hashtagIndex = messageText.indexOf('#');
   let page = 0;
   if (hashtagIndex >= 0 && messageText.length > hashtagIndex) {
     page = parseInt(messageText.substr(hashtagIndex + 1));
@@ -201,12 +201,12 @@ function sendCardMessage(recipientId, attachment_id, card) {
     },
     message: {
       attachment: {
-        type: "template",
+        type: 'template',
         payload: {
-          template_type: "media",
+          template_type: 'media',
           elements: [
             {
-              media_type: "image",
+              media_type: 'image',
               attachment_id: attachment_id,
               buttons: [
                 getScryfallButtonForCard(card),
@@ -224,22 +224,22 @@ function sendCardMessage(recipientId, attachment_id, card) {
 
 function getShareButtonForCard(card) {
   return {
-    "type": "element_share",
-    "share_contents": {
-      "attachment": {
-        "type": "template",
-        "payload": {
-          "template_type":"generic",
-          "image_aspect_ratio": "square",
-          "elements":[
+    type: 'element_share',
+    share_contents: {
+      attachment: {
+        type: 'template',
+        payload: {
+          template_type:'generic',
+          image_aspect_ratio: 'square',
+          elements:[
             {
-              "title": card.name,
-              "image_url": card.imageUrl,
-              "default_action": {
-                "type": "web_url",
-                "url": getScryfallButtonForCard(card).url,
+              title: card.name,
+              image_url: card.imageUrl,
+              default_action: {
+                type: 'web_url',
+                url: getScryfallButtonForCard(card).url,
               },
-              "buttons":[
+              buttons:[
                 getScryfallButtonForCard(card)
               ]
             }
@@ -254,9 +254,9 @@ function getScryfallButtonForCard(card) {
    const set = card.set.toLowerCase(),
      number = card.number;
    return {
-     type: "web_url",
-     url: "https://scryfall.com/card/" + set + "/" + number,
-     title: "Scryfall"
+     type: 'web_url',
+     url: 'https://scryfall.com/card/' + set + '/' + number,
+     title: 'Scryfall'
    }
 }
 
@@ -271,23 +271,23 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
     },
     message: {
       attachment: {
-        type: "template",
+        type: 'template',
         payload: {
-          template_type: "list",
-          top_element_style: "compact",
+          template_type: 'list',
+          top_element_style: 'compact',
           elements: cards.slice(0, 4).map(card => {
             return {
               title: card.name,
-              subtitle: card.type + "\n" + card.text,
+              subtitle: card.type + '\n' + card.text,
               image_url: card.imageUrl,
-              "default_action": {
-                "type": "web_url",
-                "url": getScryfallButtonForCard(card).url
+              'default_action': {
+                'type': 'web_url',
+                'url': getScryfallButtonForCard(card).url
               },
               buttons: [
                 {
-                  type: "postback",
-                  title: "This One",
+                  type: 'postback',
+                  title: 'This One',
                   payload: card.name
                 }
               ]
@@ -302,9 +302,9 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
   if (cards.length > 4) {
     messageData.message.attachment.payload.buttons.push(
       {
-        type: "postback",
-        title: "More",
-        payload: cardName + "#" + (page + 1)
+        type: 'postback',
+        title: 'More',
+        payload: cardName + '#' + (page + 1)
       }
     );
   }
@@ -319,7 +319,7 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
  function callMTGSDK(recipientId, cardName, page) {
    mtg.card.where({ name: cardName })
    .then(cards => cards.filter(card => card.imageUrl && card.number)) // Filter out cards without images or set numbers
-   .then(cards => cards.filter(card => card.set.toLowerCase() != "van"))
+   .then(cards => cards.filter(card => card.set.toLowerCase() != 'van'))
    .then(cards => {
      let uniqueNames = [];
      return cards.filter(card => {
@@ -332,7 +332,7 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
    }) // Remove cards with duplicate names
    .then(cards => cards.slice(page * 4)) // Remove already displayed cards
    .then(cards => {
-     console.log("Cards: ", cards.map(card => card.name));
+     console.log('Cards: ', cards.map(card => card.name));
      if (cards[0]) {
        const matchingName = cards.filter(card => card.name.toLowerCase() == cardName.toLowerCase());
        if (matchingName.length >= 1) {
@@ -352,7 +352,7 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
            id: recipientId
          },
          message: {
-           text: cardName + " was not found"
+           text: cardName + ' was not found'
          }
        };
 
@@ -374,7 +374,7 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
        json: {
          message: {
            attachment: {
-             type: "image",
+             type: 'image',
              payload: {
                is_reusable: true,
                url: url
@@ -386,7 +386,7 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
        if (!error && response.statusCode == 200) {
          resolve(body.attachment_id);
        } else {
-         console.error("Failed calling Attachment Upload API", response.statusCode, response.statusMessage, body.error);
+         console.error('Failed calling Attachment Upload API', response.statusCode, response.statusMessage, body.error);
          reject();
        }
      });
@@ -411,14 +411,14 @@ function callSendAPI(messageData) {
       var messageId = body.message_id;
 
       if (messageId) {
-        console.log("Successfully sent message with id %s to recipient %s",
+        console.log('Successfully sent message with id %s to recipient %s',
           messageId, recipientId);
       } else {
-      console.log("Successfully called Send API for recipient %s",
+      console.log('Successfully called Send API for recipient %s',
         recipientId);
       }
     } else {
-      console.error("Failed calling Send API", response.statusCode, response.statusMessage, body.error);
+      console.error('Failed calling Send API', response.statusCode, response.statusMessage, body.error);
     }
   });
 }
