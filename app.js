@@ -9,7 +9,8 @@ const
   crypto = require('crypto'),
   express = require('express'),
   https = require('https'),
-  request = require('request');
+  request = require('request'),
+  rp = require('request-promise');
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
@@ -196,18 +197,48 @@ function handleMessageText(senderID, messageText) {
  */
  function callScryfallAPI(recipientId, cardName, page) {
    mtg.card.where({ name: cardName })
-   .then(cards => cards.filter(card => card.imageUrl && card.number)) // Filter out cards without images or set numbers
-   .then(cards => cards.filter(card => card.set.toLowerCase() != 'van'))
-   .then(cards => {
-     let uniqueNames = [];
-     return cards.filter(card => {
-       if (!uniqueNames.includes(card.name)) {
-         uniqueNames.push(card.name);
-         return true;
+   rp({
+     uri: 'https://api.scryfall.com/cards/search',
+     qs: {
+       order: 'set',
+       dir: 'desc',
+       q: cardName
+     },
+     method: 'GET',
+     json: true
+   })
+   .then(response => {
+     return response.data.map(card => {
+       return {
+         id: card.id,
+         name: card.name,
+         set: card.set,
+         type: card.type_line,
+         text: card.oracle_text,
+         url: card.scryfall_uri,
+         imageUrl: card.image_uris.png,
+         number: card.collector_number
        }
-       return false;
-     });
-   }) // Remove cards with duplicate names
+     })
+   })
+   // .then(cards => cards.filter(card => card.imageUrl && card.number)) // Filter out cards without images or set numbers
+   // .then(cards => cards.filter(card => card.set.toLowerCase() != 'van'))
+   // .then(cards => {
+   //   let uniqueNames = [];
+   //   return cards.filter(card => {
+   //     if (!uniqueNames.includes(card.name)) {
+   //       uniqueNames.push(card.name);
+   //       return true;
+   //     }
+   //     return false;
+   //   });
+   // }) // Remove cards with duplicate names
+   ///////////////////////
+   .then(cards => {
+     console.log(cards);
+     return cards;
+   })
+   ///////////////////////
    .then(cards => cards.slice(page * 4)) // Remove already displayed cards
    .then(cards => {
      console.log('Cards: ', cards.map(card => card.name));
@@ -225,7 +256,7 @@ function handleMessageText(senderID, messageText) {
          sendCardListMessage(recipientId, cards, cardName, page);
        }
      } else {
-       var messageData = {
+       const messageData = {
          recipient: {
            id: recipientId
          },
@@ -233,7 +264,6 @@ function handleMessageText(senderID, messageText) {
            text: cardName + ' was not found'
          }
        };
-
        callSendAPI(messageData);
      }
    });
@@ -367,7 +397,7 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
  */
  function callAttachmentUploadAPI(url) {
    return new Promise((resolve, reject) => {
-     request({
+     rp({
        uri: 'https://graph.facebook.com/v2.6/me/message_attachments',
        qs: { access_token: PAGE_ACCESS_TOKEN },
        method: 'POST',
@@ -382,13 +412,11 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
            }
          }
        }
-     }, function (error, response, body) {
-       if (!error && response.statusCode == 200) {
-         resolve(body.attachment_id);
-       } else {
-         console.error('Failed calling Attachment Upload API', response.statusCode, response.statusMessage, body.error);
-         reject();
-       }
+     })
+     .then(response => resolve(body.attachment_id))
+     .catch(error => {
+         console.error('Failed calling Attachment Upload API ', error);
+         reject(error);
      });
    });
  }
