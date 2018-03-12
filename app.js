@@ -194,7 +194,7 @@ function handleMessageText(senderID, messageText) {
 /*
  * Send a message with a card image using the Send API
  *
-*/
+ */
 function callScryfallAPI(recipientId, cardName, page) {
   rp({
     uri: 'https://api.scryfall.com/cards/search',
@@ -316,7 +316,7 @@ function getShareButtonForCard(card) {
               image_url: card.imageUrl,
               default_action: {
                 type: 'web_url',
-                url: getScryfallButtonForCard(card).url,
+                url: card.url,
               },
               buttons:[
                 getScryfallButtonForCard(card)
@@ -330,11 +330,9 @@ function getShareButtonForCard(card) {
 }
 
 function getScryfallButtonForCard(card) {
-   const set = card.set.toLowerCase(),
-     number = card.number;
    return {
      type: 'web_url',
-     url: 'https://scryfall.com/card/' + set + '/' + number,
+     url: card.url,
      title: 'Scryfall'
    }
 }
@@ -361,7 +359,7 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
               image_url: card.imageUrl,
               'default_action': {
                 'type': 'web_url',
-                'url': getScryfallButtonForCard(card).url
+                'url': card.url
               },
               buttons: [
                 {
@@ -395,31 +393,31 @@ function sendCardListMessage(recipientId, cards, cardName, page) {
  * Call the Attachment Upload API to get an attachment id for an image
  *
  */
- function callAttachmentUploadAPI(url) {
-   return new Promise((resolve, reject) => {
-     rp({
-       uri: 'https://graph.facebook.com/v2.6/me/message_attachments',
-       qs: { access_token: PAGE_ACCESS_TOKEN },
-       method: 'POST',
-       json: {
-         message: {
-           attachment: {
-             type: 'image',
-             payload: {
-               is_reusable: true,
-               url: url
-             }
-           }
-         }
-       }
-     })
-     .then(response => resolve(body.attachment_id))
-     .catch(error => {
-         console.error('Failed calling Attachment Upload API ', error);
-         reject(error);
-     });
-   });
- }
+function callAttachmentUploadAPI(url) {
+  return new Promise((resolve, reject) => {
+    rp({
+      uri: 'https://graph.facebook.com/v2.6/me/message_attachments',
+      qs: { access_token: PAGE_ACCESS_TOKEN },
+      method: 'POST',
+      json: {
+        message: {
+          attachment: {
+            type: 'image',
+            payload: {
+              is_reusable: true,
+              url: url
+            }
+          }
+        }
+      }
+    })
+    .then(response => resolve(response.attachment_id))
+    .catch(error => {
+      console.error('Failed calling Attachment Upload API ', error);
+      reject(error);
+    });
+  });
+}
 
 /*
  * Call the Send API. The message data goes in the body. If successful, we'll
