@@ -209,14 +209,15 @@ function callScryfallAPI(recipientId, cardName, page) {
   })
   .then(response => {
     return response.data.map(card => {
+      const object = card.card_faces ? card.card_faces[0] : card;
       return {
         id: card.id,
-        name: card.name,
+        name: object.name,
         set: card.set,
-        type: card.type_line,
-        text: card.oracle_text,
+        type: object.type_line,
+        text: object.oracle_text,
         url: card.scryfall_uri,
-        imageUrl: card.image_uris.png,
+        imageUrl: object.image_uris.png,
         number: card.collector_number
       }
     })
