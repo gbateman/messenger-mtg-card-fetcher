@@ -196,7 +196,6 @@ function handleMessageText(senderID, messageText) {
  *
 */
 function callScryfallAPI(recipientId, cardName, page) {
-  mtg.card.where({ name: cardName })
   rp({
     uri: 'https://api.scryfall.com/cards/search',
     qs: {
