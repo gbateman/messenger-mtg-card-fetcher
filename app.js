@@ -196,15 +196,29 @@ function handleMessageText(senderID, messageText) {
  *
  */
 function callScryfallAPI(recipientId, cardName, page) {
-  rp({
+  let options = {
     uri: 'https://api.scryfall.com/cards/search',
     qs: {
       order: 'set',
       dir: 'desc',
+      page: 1,
       q: cardName
     },
     method: 'GET',
     json: true
+  };
+  rp(options)
+  .then(response => {
+    let hasMore = response.hasMore;
+    let data = [response.data];
+    while (hasMore) {
+      options.qs.page = options.qs.page + 1
+      rp(options)
+      .then(response => {
+        data.concat(response.data);
+        hasMore = response.hasMore;
+      })
+    }
   })
   .then(response => {
     return response.data.map(card => {
