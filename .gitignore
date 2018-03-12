@@ -6,3 +6,5 @@ node_modules
 .npm
 *.dat
 .DS_Store
+
+test.js

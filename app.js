@@ -210,7 +210,7 @@ function callScryfallAPI(recipientId, cardName, page) {
   rp(options)
   .then(response => {
     let hasMore = response.hasMore;
-    let data = [response.data];
+    let data = response.data;
     while (hasMore) {
       options.qs.page = options.qs.page + 1
       rp(options)
@@ -219,10 +219,11 @@ function callScryfallAPI(recipientId, cardName, page) {
         hasMore = response.hasMore;
       })
     }
+    return data;
   })
-  .then(response => {
-    return response.data.map(card => {
-      const object = card.card_faces ? card.card_faces[0] : card;
+  .then(data => {
+    return data.map(card => {
+      const object = card.card_faces && !card.image_uris ? card.card_faces[0] : card;
       return {
         id: card.id,
         name: object.name,
@@ -235,24 +236,6 @@ function callScryfallAPI(recipientId, cardName, page) {
       }
     })
   })
-  // .then(cards => cards.filter(card => card.imageUrl && card.number)) // Filter out cards without images or set numbers
-  // .then(cards => cards.filter(card => card.set.toLowerCase() != 'van'))
-  // .then(cards => {
-  //   let uniqueNames = [];
-  //   return cards.filter(card => {
-  //     if (!uniqueNames.includes(card.name)) {
-  //       uniqueNames.push(card.name);
-  //       return true;
-  //     }
-  //     return false;
-  //   });
-  // }) // Remove cards with duplicate names
-  ///////////////////////
-  .then(cards => {
-    console.log(cards);
-    return cards;
-  })
-  ///////////////////////
   .then(cards => cards.slice(page * 4)) // Remove already displayed cards
   .then(cards => {
     console.log('Cards: ', cards.map(card => card.name));
