@@ -78,6 +78,7 @@ app.get('/webhook', function(req, res) {
 app.post('/webhook', function (req, res) {
   var data = req.body;
 
+  console.log("Post to /webhook");
   console.log(JSON.stringify(data));
 
   // Make sure this is a page subscription
@@ -106,6 +107,31 @@ app.post('/webhook', function (req, res) {
     // successfully received the callback. Otherwise, the request will time out.
     res.sendStatus(200);
   }
+});
+
+
+/*
+ * Calls the FB attachment upload api and returns an attachment id given a scryfall image link
+ *
+ */
+app.post('/upload', function(req, res) {
+  const data = req.body;
+
+  console.log(req);
+
+  if (!data.url) {
+    res.status(400).send('Malformed request');
+    return;
+  }
+
+  if (!data.url.startsWith('https://img.scryfall.com')) {
+    res.status(400).send('Not scryfall image');
+    return;
+  }
+
+  callAttachmentUploadAPI(data.url)
+  .then(aid => res.json({ 'attachment_id': aid }))
+  .catch(error => res.status(500).send('Failed to contact Facebook upload API'));
 });
 
 /*
