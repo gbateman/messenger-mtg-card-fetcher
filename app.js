@@ -257,7 +257,7 @@ function callScryfallAPI(recipientId, cardName, page) {
         type: object.type_line,
         text: object.oracle_text,
         url: card.scryfall_uri,
-        imageUrl: object.image_uris.png,
+        imageUrl: object.image_uris.normal,
         number: card.collector_number
       }
     })
