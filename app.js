@@ -44,6 +44,17 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
 }
 
 /*
+ * Welcome endpoint for testing/introduction
+ *
+ */
+app.get('/', function(req, res) {
+  res.send('<h1>Messenger MTG Card Fetcher</h1>'
+      + 'This is the backend for the Messenger MTG Card Fetcher bot. '
+      + 'You can find it on messenger by searching for its name, '
+      + 'and use it to get links and pictures to MTG cards easily through the Messenger platform.');
+});
+
+/*
  * Privacy Policy because fb wants that for some reason
  *
  */
