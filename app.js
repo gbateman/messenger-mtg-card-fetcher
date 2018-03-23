@@ -257,6 +257,17 @@ function callScryfallAPI(recipientId, cardName, page) {
       })
     }
     return data;
+  },
+  error => {
+      const messageData = {
+        recipient: {
+          id: recipientId
+        },
+        message: {
+          text: cardName + ' was not found'
+        }
+      };
+      callSendAPI(messageData);
   })
   .then(data => {
     return data.map(card => {
@@ -273,7 +284,7 @@ function callScryfallAPI(recipientId, cardName, page) {
       }
     })
   })
-  .then(cards => cards.slice(page * 4)) // Remove already displayed cards
+  .then(cards => cards.slice(page * 4)) // Remove already-displayed cards
   .then(cards => {
     console.log('Cards: ', cards.map(card => card.name));
     if (cards[0]) {
@@ -289,16 +300,6 @@ function callScryfallAPI(recipientId, cardName, page) {
       } else {
         sendCardListMessage(recipientId, cards, cardName, page);
       }
-    } else {
-      const messageData = {
-        recipient: {
-          id: recipientId
-        },
-        message: {
-          text: cardName + ' was not found'
-        }
-      };
-      callSendAPI(messageData);
     }
   });
 }
