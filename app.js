@@ -323,8 +323,7 @@ function sendCardMessage(recipientId, attachment_id, card) {
               media_type: 'image',
               attachment_id: attachment_id,
               buttons: [
-                getScryfallButtonForCard(card),
-                getShareButtonForCard(card)
+                getScryfallButtonForCard(card)
               ]
             }
           ]
@@ -334,34 +333,6 @@ function sendCardMessage(recipientId, attachment_id, card) {
   };
 
   callSendAPI(messageData);
-}
-
-function getShareButtonForCard(card) {
-  return {
-    type: 'element_share',
-    share_contents: {
-      attachment: {
-        type: 'template',
-        payload: {
-          template_type:'generic',
-          image_aspect_ratio: 'square',
-          elements:[
-            {
-              title: card.name,
-              image_url: card.imageUrl,
-              default_action: {
-                type: 'web_url',
-                url: card.url,
-              },
-              buttons:[
-                getScryfallButtonForCard(card)
-              ]
-            }
-          ]
-        }
-      }
-    }
-  }
 }
 
 function getScryfallButtonForCard(card) {
